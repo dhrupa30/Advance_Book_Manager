@@ -17,12 +17,12 @@ class MainWindow:
         )
         self.logo.pack(pady=20)
 
-        # Sidebar buttons
+        # Sidebar buttons (order updated)
         btn_config = {"bg":"#34495e", "fg":"white", "bd":0, "height":2, "font":("Helvetica", 12)}
         tk.Button(self.sidebar, text="Dashboard", command=self.show_dashboard, **btn_config).pack(fill="x", pady=5, padx=10)
+        tk.Button(self.sidebar, text="Categories", command=self.show_categories, **btn_config).pack(fill="x", pady=5, padx=10)
         tk.Button(self.sidebar, text="Books", command=self.show_books, **btn_config).pack(fill="x", pady=5, padx=10)
         tk.Button(self.sidebar, text="Authors", command=self.show_authors, **btn_config).pack(fill="x", pady=5, padx=10)
-        tk.Button(self.sidebar, text="Categories", command=self.show_categories, **btn_config).pack(fill="x", pady=5, padx=10)
         tk.Button(self.sidebar, text="Logout", command=self.logout, bg="#e74c3c", fg="white", bd=0, height=2).pack(side="bottom", fill="x", pady=10, padx=10)
 
         # Container
@@ -32,7 +32,7 @@ class MainWindow:
         # Pages dictionary
         self.pages = {}
 
-        # Show default page
+        # Show Dashboard first
         self.show_dashboard()
 
     def show_dashboard(self):
@@ -41,7 +41,6 @@ class MainWindow:
             self.pages["Dashboard"] = DashboardPage(self.container)
             self.pages["Dashboard"].place(relx=0, rely=0, relwidth=1, relheight=1)
         else:
-            # Refresh counts and pie chart every time
             self.pages["Dashboard"].load_counts()
             self.pages["Dashboard"].load_pie_chart()
         self.pages["Dashboard"].tkraise()
@@ -65,6 +64,8 @@ class MainWindow:
             from ui.categories_page import CategoriesPage
             self.pages["Categories"] = CategoriesPage(self.container)
             self.pages["Categories"].place(relx=0, rely=0, relwidth=1, relheight=1)
+        else:
+            self.pages["Categories"].load_categories()
         self.pages["Categories"].tkraise()
 
     def logout(self):

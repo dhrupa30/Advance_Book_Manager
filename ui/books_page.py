@@ -202,6 +202,154 @@ class BooksPage(tk.Frame):
         self.load_books()
 
     # Add/edit form (kept same)
+   
     def open_book_form(self, book_id=None):
-        # ... (same code as you already have for the form)
-        pass
+    
+          
+            
+        form = tk.Toplevel(self)
+        form.title("Add / Edit Book")
+        form.geometry("400x550")
+        form.resizable(False, False)
+
+        # Title
+        tk.Label(form, text="Title:").pack(pady=5)
+        title_entry = tk.Entry(form, width=40)
+        title_entry.pack(pady=5)
+
+        # Status
+        tk.Label(form, text="Status:").pack(pady=5)
+        status_cb = ttk.Combobox(
+            form,
+            values=["Available", "Reading", "Checked Out"],
+            state="readonly",
+            width=37
+        )
+        status_cb.pack(pady=5)
+
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+
+        # Author (single select dropdown)
+        tk.Label(form, text="Select Author:").pack(pady=5)
+        cur.execute("SELECT id, name FROM authors ORDER BY name")
+        authors = cur.fetchall()
+        author_cb = ttk.Combobox(form, values=[a[1] for a in authors], state="readonly", width=37)
+        author_cb.pack(pady=5)
+
+        # Categories (multi-select listbox)
+        tk.Label(form, text="Select Categories:").pack(pady=5)
+        cur.execute("SELECT id, name FROM categories ORDER BY name")
+        categories = cur.fetchall()
+        category_listbox = tk.Listbox(form, selectmode="multiple", width=40, height=6, exportselection=False)
+        category_listbox.pack(pady=5)
+        for idx, (_, name) in enumerate(categories):
+            category_listbox.insert(idx, name)
+
+        # Cover image
+        tk.Label(form, text="Cover Image:").pack(pady=5)
+        cover_label = tk.Label(form, text="No Image Selected", bg="#ddd", width=30, height=10)
+        cover_label.pack(pady=5)
+        cover_path_var = tk.StringVar()
+
+        def upload_image():
+            file_path = filedialog.askopenfilename(
+                filetypes=[("Image Files", "*.png;*.jpg;*.jpeg;*.gif")]
+            )
+            if file_path:
+                img = Image.open(file_path).resize((100, 140))
+                img_tk = ImageTk.PhotoImage(img, master=form)   # ✅ bind to form
+                cover_label.config(image=img_tk, text="")
+                cover_label.image = img_tk   # ✅ keep reference
+                # copy to images folder
+                new_path = os.path.join(IMAGES_DIR, os.path.basename(file_path))
+                shutil.copy(file_path, new_path)
+                cover_path_var.set(new_path)
+
+        tk.Button(form, text="Upload Image", command=upload_image, bg="#3498db", fg="white").pack(pady=5)
+
+        # If editing, load existing values
+        if book_id:
+            cur.execute("SELECT title, status, author_id, cover_image FROM books WHERE id=?", (book_id,))
+            row = cur.fetchone()
+            if row:
+                title_entry.insert(0, row[0])
+                status_cb.set(row[1])
+
+                # Author
+                for idx, (aid, name) in enumerate(authors):
+                    if aid == row[2]:
+                        author_cb.current(idx)
+
+                # Cover
+                if row[3] and os.path.exists(row[3]):
+                    img = Image.open(row[3]).resize((100, 140))
+                    img_tk = ImageTk.PhotoImage(img, master=form)
+                    cover_label.config(image=img_tk, text="")
+                    cover_label.image = img_tk
+                    cover_path_var.set(row[3])
+
+            # Load categories
+            cur.execute("""
+                SELECT c.id FROM categories c
+                JOIN book_categories bc ON c.id = bc.category_id
+                WHERE bc.book_id=?
+            """, (book_id,))
+            category_ids = {r[0] for r in cur.fetchall()}
+            for idx, (cid, _) in enumerate(categories):
+                if cid in category_ids:
+                    category_listbox.selection_set(idx)
+
+        conn.close()
+
+        # Save handler
+        def save_book():
+            nonlocal book_id   # ✅ fix scope issue
+            title = title_entry.get().strip()
+            status = status_cb.get().strip()
+            cover_path = cover_path_var.get()
+            author_idx = author_cb.current()
+
+            if not title or not status or author_idx == -1:
+                messagebox.showwarning("Validation", "Title, Status and Author are required!")
+                return
+
+            author_id = authors[author_idx][0]
+
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+
+            if book_id:  # update
+                cur.execute(
+                    "UPDATE books SET title=?, status=?, author_id=?, cover_image=? WHERE id=?",
+                    (title, status, author_id, cover_path, book_id)
+                )
+                cur.execute("DELETE FROM book_categories WHERE book_id=?", (book_id,))
+            else:  # insert new
+                cur.execute(
+                    "INSERT INTO books (title, status, author_id, cover_image) VALUES (?, ?, ?, ?)",
+                    (title, status, author_id, cover_path)
+                )
+                book_id = cur.lastrowid
+
+            # Save selected categories
+            selected_categories = category_listbox.curselection()
+            for idx in selected_categories:
+                cid = categories[idx][0]
+                cur.execute("INSERT INTO book_categories (book_id, category_id) VALUES (?, ?)", (book_id, cid))
+
+            conn.commit()
+            conn.close()
+
+            self.load_books()
+            form.destroy()
+
+        # ✅ Save button at bottom
+        tk.Button(
+            form,
+            text="Save",
+            command=save_book,
+            bg="#27ae60",
+            fg="white",
+            width=15
+        ).pack(pady=15)

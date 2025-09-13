@@ -12,10 +12,20 @@ class CategoriesPage(tk.Frame):
         self.create_ui()
         self.load_categories()
 
-    def create_ui(self):
-        tk.Label(self, text="Categories Management", bg="#f8f9fa", font=("Arial", 18, "bold")).pack(pady=15)
+    def refresh_page(self):
+        """Refresh UI + reload categories (fixes missing buttons)"""
+        for widget in self.winfo_children():
+            widget.destroy()
+        self.selected_category_id = None
+        self.create_ui()
+        self.load_categories()
 
-        self.tree = ttk.Treeview(self, columns=("ID","Name"), show="headings", height=15)
+    def create_ui(self):
+        tk.Label(self, text="Categories Management", bg="#f8f9fa",
+                 font=("Arial", 18, "bold")).pack(pady=15)
+
+        self.tree = ttk.Treeview(self, columns=("ID", "Name"),
+                                 show="headings", height=15)
         self.tree.heading("ID", text="ID")
         self.tree.heading("Name", text="Name")
         self.tree.column("Name", width=200)
@@ -24,9 +34,13 @@ class CategoriesPage(tk.Frame):
 
         btn_frame = tk.Frame(self, bg="#f8f9fa")
         btn_frame.pack(pady=10)
-        tk.Button(btn_frame, text="Add Category", bg="#2ecc71", fg="white", command=self.add_category).pack(side="left", padx=5)
-        tk.Button(btn_frame, text="Edit Category", bg="#f1c40f", fg="white", command=self.edit_category).pack(side="left", padx=5)
-        tk.Button(btn_frame, text="Delete Category", bg="#e74c3c", fg="white", command=self.delete_category).pack(side="left", padx=5)
+
+        tk.Button(btn_frame, text="Add Category", bg="#2ecc71", fg="white",
+                  command=self.add_category).pack(side="left", padx=5)
+        tk.Button(btn_frame, text="Edit Category", bg="#f1c40f", fg="white",
+                  command=self.edit_category).pack(side="left", padx=5)
+        tk.Button(btn_frame, text="Delete Category", bg="#e74c3c", fg="white",
+                  command=self.delete_category).pack(side="left", padx=5)
 
     def on_tree_select(self, event):
         selected = self.tree.selection()
@@ -88,7 +102,8 @@ class CategoriesPage(tk.Frame):
             win.destroy()
             self.load_categories()
 
-        tk.Button(win, text="Save", bg="#2ecc71", fg="white", command=save_category).pack(pady=15)
+        tk.Button(win, text="Save", bg="#2ecc71", fg="white",
+                  command=save_category).pack(pady=15)
 
     def delete_category(self):
         if not self.selected_category_id:
