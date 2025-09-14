@@ -46,5 +46,5 @@ Use these credentials to log in as an administrator:
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/dhrupa30/advance_book_manager.git
-   cd advance_book_manager
+   git clone https://github.com/dhrupa30/Advance_Book_Manager.git
+   cd Advance_Book_Manager
